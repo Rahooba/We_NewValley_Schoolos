@@ -1,0 +1,1154 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =========================================================
+// 01_System_DB — Users, Roles, Permissions, Logs, Settings
+// =========================================================
+
+model Role {
+  id          String           @id @default(cuid())
+  code        String           @unique // e.g. ROLE001
+  name        String
+  description String?
+  level       Int // used for hierarchy checks (100 = highest)
+  status      Status           @default(ACTIVE)
+  users       User[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id            String           @id @default(cuid())
+  code          String           @unique // e.g. PER001
+  module        String
+  permissionKey String           @unique // e.g. students.view
+  action        PermissionAction
+  description   String?
+  status        Status           @default(ACTIVE)
+  roles         RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id                    String              @id @default(cuid())
+  fullName              String
+  email                 String              @unique
+  passwordHash          String
+  roleId                String
+  role                  Role                @relation(fields: [roleId], references: [id])
+  employeeId            String?             @unique
+  employee              Employee?           @relation(fields: [employeeId], references: [id])
+  status                Status              @default(ACTIVE)
+  lastLoginAt           DateTime?
+  loginLogs             LoginLog[]
+  notifications         Notification[]
+  warningLogsSent       WarningLog[]
+  improvementPlansOwned ImprovementPlan[]
+  workDocumentations    WorkDocumentation[]
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@map("users")
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@map("login_logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  @@map("settings")
+}
+
+// =========================================================
+// 02_Students_DB
+// =========================================================
+
+model Student {
+  id                      String                   @id @default(cuid())
+  studentCode             String                   @unique
+  fullName                String
+  gender                  String?
+  birthDate               DateTime?
+  classId                 String?
+  class                   Class?                   @relation(fields: [classId], references: [id])
+  sectionId               String?
+  section                 Section?                 @relation(fields: [sectionId], references: [id])
+  track                   String? // التخصص: برمجة / شبكات / اتصالات — فارغ لطلاب السنة الأولى (عام)
+  status                  Status                   @default(ACTIVE)
+  parents                 Parent[]
+  attendance              StudentAttendance[]
+  behavior                StudentBehavior[]
+  documents               StudentDocument[]
+  medical                 StudentMedical?
+  marks                   Mark[]
+  socialCases             SocialCase[]
+  psychologicalCases      PsychologicalCase[]
+  remedialFlags           RemedialFlag[]
+  enrichmentFlags         EnrichmentFlag[]
+  formativeAssessments    FormativeAssessment[]
+  warningLogs             WarningLog[]
+  clinicCases             ClinicCase[]
+  protectionCommittees    ProtectionCommittee[]
+  investigationCommittees InvestigationCommittee[]
+  specialistReports       SpecialistReport[]
+  studentViolations       StudentViolation[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@map("students")
+}
+
+model Parent {
+  id        String  @id @default(cuid())
+  fullName  String
+  phone     String?
+  email     String?
+  relation  String? // Father / Mother / Guardian
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("parents")
+}
+
+model StudentAttendance {
+  id        String           @id @default(cuid())
+  studentId String
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    AttendanceStatus
+  note      String?
+
+  @@unique([studentId, date])
+  @@map("student_attendance")
+}
+
+model StudentBehavior {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type        String // positive / negative
+  description String
+  recordedBy  String?
+  createdAt   DateTime @default(now())
+
+  @@map("student_behavior")
+}
+
+model StudentDocument {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  name       String
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+
+  @@map("student_documents")
+}
+
+model StudentMedical {
+  id        String  @id @default(cuid())
+  studentId String  @unique
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  bloodType String?
+  allergies String?
+  notes     String?
+
+  @@map("student_medical")
+}
+
+// Social Specialist cases (الأخصائي الاجتماعي)
+model SocialCase {
+  id          String    @id @default(cuid())
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      String    @default("open") // open / in_progress / closed
+  assignedTo  String? // userId of social specialist
+  notes       String?
+  followUpAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("social_cases")
+}
+
+// Psychological Specialist cases (الأخصائي النفسي)
+model PsychologicalCase {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  status        String    @default("open") // open / in_progress / closed
+  assignedTo    String? // userId of psychological specialist
+  sessions      Int       @default(0)
+  notes         String?
+  nextSessionAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("psychological_cases")
+}
+
+// =========================================================
+// 03_HR_DB
+// =========================================================
+
+model Employee {
+  id                      String                   @id @default(cuid())
+  employeeCode            String                   @unique
+  fullName                String
+  position                String?
+  department              String?
+  employmentCategory      String                   @default("contract") // "contract" | "government"
+  status                  Status                   @default(ACTIVE)
+  contracts               Contract[]
+  attendance              EmployeeAttendance[]
+  leaves                  Leave[]
+  evaluations             Evaluation[]
+  schedules               TeacherSchedule[]
+  lessonPlans             LessonPlan[]
+  behaviorRecords         EmployeeBehavior[]
+  investigationCommittees InvestigationCommittee[]
+  user                    User?
+  visits                  Visit[]
+  broadcastSchedule       BroadcastSchedule[]
+  securityShifts          SecurityShift[]
+  labSessions             LabSession[]
+  supervisionSchedules    SupervisionSchedule[]
+  workshopSessions        WorkshopSession[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@map("employees")
+}
+
+model Contract {
+  id         String    @id @default(cuid())
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  startDate  DateTime
+  endDate    DateTime?
+  salary     Decimal   @db.Decimal(10, 2)
+  type       String?
+
+  @@map("contracts")
+}
+
+model EmployeeAttendance {
+  id         String           @id @default(cuid())
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime
+  status     AttendanceStatus
+  checkIn    DateTime?
+  checkOut   DateTime?
+
+  @@unique([employeeId, date])
+  @@map("employee_attendance")
+}
+
+// Attendance document uploads (paper document scans)
+model AttendanceDocument {
+  id         String   @id @default(cuid())
+  type       String // "students" | "employees"
+  date       DateTime
+  fileUrl    String // URL to the uploaded scan
+  uploadedBy String // userId
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@map("attendance_documents")
+}
+
+// Employee behavioral notes (for Professional Transformation Officer)
+model EmployeeBehavior {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type        String // positive / negative / tardiness
+  description String
+  recordedBy  String? // userId
+  createdAt   DateTime @default(now())
+
+  @@map("employee_behavior")
+}
+
+model Leave {
+  id         String         @id @default(cuid())
+  employeeId String
+  employee   Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType  String // "contract_excused" | "contract_unexcused" | "government_casual" | "government_regular"
+  startDate  DateTime
+  endDate    DateTime
+  status     ApprovalStatus @default(PENDING)
+  reason     String?
+  approvedBy String? // userId
+  createdAt  DateTime       @default(now())
+
+  @@map("leaves")
+}
+
+model Evaluation {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  period     String
+  score      Decimal  @db.Decimal(5, 2)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@map("evaluations")
+}
+
+// =========================================================
+// 04_Academics_DB
+// =========================================================
+
+model Subject {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique
+  lessonPlans LessonPlan[]
+
+  @@map("subjects")
+}
+
+model Class {
+  id       String    @id @default(cuid())
+  name     String
+  level    Int? // الصف الأول=1 / الثاني=2 / الثالث=3
+  students Student[]
+  sections Section[]
+
+  @@map("classes")
+}
+
+model Section {
+  id       String    @id @default(cuid())
+  name     String
+  classId  String
+  class    Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  students Student[]
+
+  @@map("sections")
+}
+
+model LessonPlan {
+  id          String    @id @default(cuid())
+  subjectId   String
+  subject     Subject   @relation(fields: [subjectId], references: [id])
+  teacherId   String
+  teacher     Employee  @relation(fields: [teacherId], references: [id])
+  title       String
+  fileUrl     String?
+  driveUrl    String? // Google Drive copy (optional, for director sync)
+  weekOf      DateTime
+  weekNumber  Int? // ISO week number for easier grouping
+  dueDate     DateTime // deadline set by the academic director/admin
+  submittedAt DateTime? // set once the teacher uploads their plan; null + dueDate passed = late
+  createdAt   DateTime  @default(now())
+
+  @@map("lesson_plans")
+}
+
+model TeacherSchedule {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   Employee @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  day       String
+  period    Int
+  subject   String
+  className String
+
+  @@map("teacher_schedule")
+}
+
+// =========================================================
+// 05_Exams_DB
+// =========================================================
+
+model Exam {
+  id              String           @id @default(cuid())
+  name            String
+  startDate       DateTime
+  endDate         DateTime
+  gradeLevel      Int? // الصف الأول=1 / الثاني=2 / الثالث=3 (للتنظيم داخل صفحات الصفوف)
+  committees      ExamCommittee[]
+  marks           Mark[]
+  results         Result[]
+  remedialFlags   RemedialFlag[]
+  enrichmentFlags EnrichmentFlag[]
+
+  @@map("exams")
+}
+
+model ExamCommittee {
+  id      String  @id @default(cuid())
+  examId  String
+  exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  room    String
+  members String? // comma separated employee codes for now
+
+  @@map("exam_committees")
+}
+
+model Mark {
+  id        String  @id @default(cuid())
+  examId    String
+  exam      Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject   String
+  score     Decimal @db.Decimal(6, 2)
+  maxScore  Decimal @db.Decimal(6, 2)
+
+  @@unique([examId, studentId, subject])
+  @@map("marks")
+}
+
+model Result {
+  id        String  @id @default(cuid())
+  examId    String
+  exam      Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId String
+  total     Decimal @db.Decimal(8, 2)
+  average   Decimal @db.Decimal(6, 2)
+  status    String // pass / fail
+
+  @@map("results")
+}
+
+// =========================================================
+// 06_Quality_DB
+// =========================================================
+
+model Visit {
+  id               String    @id @default(cuid())
+  plannedVisitDate DateTime? // تاريخ الزيارة المجدولة (مسبقًا)
+  visitedAt        DateTime? // تاريخ الزيارة الفعلية
+  visitor          String
+  purpose          String?
+  notes            String?
+  status           String    @default("scheduled") // scheduled / completed / cancelled
+  employeeId       String? // الموظف/المعلم موضوع الزيارة
+  employee         Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  remindedAt       DateTime? // آخر تذكير بالزيارة (لمنع التكرار)
+
+  @@map("quality_visits")
+}
+
+model ImprovementPlan {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  status      String    @default("open") // open / in_progress / reviewed / completed
+  ownerId     String? // userId المسئول عن تنفيذ الخطة (معلم/مسئول)
+  owner       User?     @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@map("improvement_plans")
+}
+
+model KPI {
+  id     String   @id @default(cuid())
+  name   String
+  target Decimal  @db.Decimal(8, 2)
+  actual Decimal? @db.Decimal(8, 2)
+  period String
+
+  @@map("kpis")
+}
+
+model Risk {
+  id          String  @id @default(cuid())
+  title       String
+  severity    String
+  description String?
+  mitigation  String?
+
+  @@map("risks")
+}
+
+// =========================================================
+// 06b_Operations_DB — Remedial, Warnings, Documentation,
+// Activities, Broadcast & Cleanliness
+// =========================================================
+
+// ملف المعالجة: طالب يحتاج معالجة لأنه أقل من حد النجاح في مادة
+model RemedialFlag {
+  id         String    @id @default(cuid())
+  studentId  String
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examId     String?
+  exam       Exam?     @relation(fields: [examId], references: [id], onDelete: SetNull)
+  subject    String
+  reason     String?
+  status     String    @default("open") // open / resolved
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@map("remedial_flags")
+}
+
+// تقييم تكويني/معالجة: جلسة متابعة بعد وضع خطة علاجية للطالب
+// بالإضافة إلى درجات التكويني لكل صف (gradeLevel/className/slot) — صف لكل طالب لكل فئة
+model FormativeAssessment {
+  id             String   @id @default(cuid())
+  studentId      String
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject        String
+  assessmentDate DateTime @default(now())
+  score          Decimal  @db.Decimal(6, 2)
+  maxScore       Decimal  @db.Decimal(6, 2)
+  notes          String?
+  recordedBy     String? // userId
+  gradeLevel     Int? // الصف الأول=1 / الثاني=2 / الثالث=3 (هيكل الصفوف)
+  className      String? // الفصل (مثل A1)
+  slot           String? // فئة التقييم: "تكويني 1-4" / "تخصص 1-4" / "ثقافي شامل 1-4"
+
+  @@map("formative_assessments")
+}
+
+// إنذارات الغياب (شئون الطلاب)
+model WarningLog {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  warningDate  DateTime @default(now())
+  reason       String
+  message      String?
+  sentByUserId String?
+  sentBy       User?    @relation(fields: [sentByUserId], references: [id], onDelete: SetNull)
+
+  @@map("warning_logs")
+}
+
+// توثيق الأعمال / الإثباتات الوظيفية
+model WorkDocumentation {
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  department     String?
+  documentedAt   DateTime @default(now())
+  fileUrl        String?
+  recordedBy     String? // userId
+  recordedByUser User?    @relation(fields: [recordedBy], references: [id], onDelete: SetNull)
+
+  @@map("work_documentations")
+}
+
+// الأنشطة المدرسية
+model SchoolActivity {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  type         String?
+  activityDate DateTime @default(now())
+  location     String?
+  organizer    String?
+  status       String   @default("planned") // planned / done / cancelled
+
+  @@map("school_activities")
+}
+
+// جدول الإذاعة المدرسية
+model BroadcastSchedule {
+  id            String    @id @default(cuid())
+  broadcastDate DateTime  @default(now())
+  theme         String?
+  className     String? // الفصل المكلف بالإذاعة
+  coordinator   String? // المشرف (نص حر للتوافق مع البيانات القديمة)
+  employeeId    String? // المشرف/المسئول المستهدف بالتنبيه
+  employee      Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  status        String    @default("scheduled") // scheduled / done
+  notes         String?
+  notified      Boolean   @default(false) // هل أُرسل التنبيه للمشرف
+
+  @@map("broadcast_schedule")
+}
+
+// متابعة النظافة
+model CleanlinessLog {
+  id              String   @id @default(cuid())
+  cleanlinessDate DateTime @default(now())
+  className       String? // الفصل
+  area            String? // المكان (فصل/معمل/فناء...)
+  score           Int      @default(0) // 0..10
+  notes           String?
+  recordedBy      String? // userId
+
+  @@map("cleanliness_logs")
+}
+
+// =========================================================
+// 07_Inventory_DB
+// =========================================================
+
+model Asset {
+  id           String        @id @default(cuid())
+  name         String
+  category     String?
+  serialNumber String?       @unique
+  location     String?
+  condition    String?
+  maintenance  Maintenance[]
+
+  @@map("assets")
+}
+
+model Supplier {
+  id       String            @id @default(cuid())
+  name     String
+  phone    String?
+  email    String?
+  requests PurchaseRequest[]
+
+  @@map("suppliers")
+}
+
+model PurchaseRequest {
+  id          String         @id @default(cuid())
+  supplierId  String?
+  supplier    Supplier?      @relation(fields: [supplierId], references: [id])
+  item        String
+  quantity    Int
+  status      ApprovalStatus @default(PENDING)
+  requestedAt DateTime       @default(now())
+
+  @@map("purchase_requests")
+}
+
+model Maintenance {
+  id          String    @id @default(cuid())
+  assetId     String
+  asset       Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  issue       String
+  status      String    @default("open")
+  scheduledAt DateTime?
+
+  @@map("maintenance")
+}
+
+// =========================================================
+// 08_Visitors_DB
+// =========================================================
+
+model Visitor {
+  id       String       @id @default(cuid())
+  fullName String
+  phone    String?
+  purpose  String?
+  logs     VisitorLog[]
+
+  @@map("visitors")
+}
+
+model VisitorLog {
+  id        String    @id @default(cuid())
+  visitorId String
+  visitor   Visitor   @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  checkIn   DateTime  @default(now())
+  checkOut  DateTime?
+  hostName  String?
+
+  @@map("visitor_logs")
+}
+
+// =========================================================
+// 09b_Security_Labs_Supervision_Workshops_Trainings_DB
+// =========================================================
+
+// سجلات التواجد على البوابة (الأمن)
+model GateLog {
+  id         String   @id @default(cuid())
+  personType String // "student" | "employee" | "visitor"
+  personId   String? // studentId or employeeId if known
+  personName String
+  direction  String // "in" | "out"
+  timestamp  DateTime @default(now())
+  loggedBy   String // userId of security officer / reception
+  notes      String?
+
+  @@map("gate_logs")
+}
+
+// توزيع وردية الأمن
+model SecurityShift {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime
+  shift      String // morning | evening | night
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@map("security_shifts")
+}
+
+// تقرير الأمن آخر اليوم (تقرير واحد لكل يوم)
+model SecurityDailySummary {
+  id                String   @id @default(cuid())
+  date              DateTime @unique
+  submittedBy       String // userId
+  summary           String
+  incidentsReported Boolean  @default(false)
+  incidentNotes     String?
+  createdAt         DateTime @default(now())
+
+  @@map("security_daily_summaries")
+}
+
+// محاضر فتح وغلق المعامل
+model LabSession {
+  id                    String   @id @default(cuid())
+  labName               String
+  action                String // open | close
+  employeeId            String
+  employee              Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  timestamp             DateTime @default(now())
+  safetyChecklistPassed Boolean  @default(true)
+  notes                 String?
+
+  @@map("lab_sessions")
+}
+
+// تعليمات وسلامة المعمل
+model LabInstruction {
+  id        String   @id @default(cuid())
+  labName   String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@map("lab_instructions")
+}
+
+// جدول الإشراف اليومي
+model SupervisionSchedule {
+  id                  String             @id @default(cuid())
+  employeeId          String
+  employee            Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date                DateTime
+  area                String?
+  isGeneralSupervisor Boolean            @default(false) // المشرف العام لهذا اليوم
+  createdAt           DateTime           @default(now())
+  points              SupervisionPoint[]
+
+  @@map("supervision_schedules")
+}
+
+// نقاط الإشراف المسجلة أثناء اليوم
+model SupervisionPoint {
+  id          String              @id @default(cuid())
+  scheduleId  String
+  schedule    SupervisionSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  description String
+  status      String              @default("noted") // noted / resolved
+  createdAt   DateTime            @default(now())
+
+  @@map("supervision_points")
+}
+
+// محاضر فتح وغلق الورش
+model WorkshopSession {
+  id              String   @id @default(cuid())
+  workshopName    String
+  action          String // open | close
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  timestamp       DateTime @default(now())
+  securityChecked Boolean  @default(true) // تأمين الورش
+  notes           String?
+
+  @@map("workshop_sessions")
+}
+
+// التدريبات داخل المدرسة
+model Training {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  trainerName String?
+  date        DateTime
+  attendeeIds String[] // employee IDs
+  createdAt   DateTime @default(now())
+
+  @@map("trainings")
+}
+
+// =========================================================
+// 09_Committees_DB (organizational committees, distinct from exam committees)
+// =========================================================
+
+model Committee {
+  id       String            @id @default(cuid())
+  name     String
+  purpose  String?
+  members  CommitteeMember[]
+  meetings Meeting[]
+
+  @@map("committees")
+}
+
+model CommitteeMember {
+  id          String    @id @default(cuid())
+  committeeId String
+  committee   Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  fullName    String
+  role        String?
+
+  @@map("committee_members")
+}
+
+model Meeting {
+  id          String    @id @default(cuid())
+  committeeId String
+  committee   Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  date        DateTime
+  agenda      String?
+  minutesUrl  String?
+  tasks       Task[]
+
+  @@map("meetings")
+}
+
+model Task {
+  id        String    @id @default(cuid())
+  meetingId String
+  meeting   Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  title     String
+  assignee  String?
+  dueDate   DateTime?
+  status    String    @default("open")
+
+  @@map("committee_tasks")
+}
+
+// =========================================================
+// 10_Reports_DB
+// =========================================================
+
+model Report {
+  id          String   @id @default(cuid())
+  title       String
+  module      String
+  generatedBy String?
+  fileUrl     String?
+  createdAt   DateTime @default(now())
+
+  @@map("reports")
+}
+
+// =========================================================
+// Shared enums
+// =========================================================
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum PermissionAction {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  MANAGE
+  EXPORT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// =========================================================
+// 11_Batch3_DB — التوسعة: عيادة/رياضة/أخصائي/شكاوى/حوكمة/إثرائية/مخالفات/أنشطة
+// =========================================================
+
+// الحالة الطبية المسجلة من العيادة المدرسية
+model ClinicCase {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  condition   String
+  actionTaken String?
+  loggedBy    String // userId
+  createdAt   DateTime @default(now())
+
+  @@map("clinic_cases")
+}
+
+// سجل نظافة العيادة
+model ClinicCleanlinessLog {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now())
+  status    String   @default("DONE")
+  notes     String?
+  checkedBy String // userId
+  createdAt DateTime @default(now())
+
+  @@map("clinic_cleanliness_logs")
+}
+
+// النشاطات الرياضية
+model SportsActivity {
+  id             String   @id @default(cuid())
+  title          String
+  date           DateTime
+  description    String?
+  participantIds String[]
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  @@map("sports_activities")
+}
+
+// اجتماع شهري لأخصائي اجتماعي/نفسي
+model SocialMeeting {
+  id        String   @id @default(cuid())
+  date      DateTime
+  attendees String?
+  notes     String
+  outcome   String
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@map("social_meetings")
+}
+
+// لجنة حماية مدرسية لحالة طالب
+model ProtectionCommittee {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  formedBy     String // userId
+  memberIds    String[] // userIds
+  status       String   @default("OPEN")
+  finalOpinion String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("protection_committees")
+}
+
+// لجنة الاستجوابات الداخلية — تحقيق إداري داخل المدرسة
+model InvestigationCommittee {
+  id                String    @id @default(cuid())
+  subject           String // الموضوع — what the investigation is about
+  memberIds         String[] // employee IDs forming the committee
+  committeeOpinion  String? // رأي اللجنة
+  adminOpinion      String? // رأي إدارة المدرسة
+  status            String    @default("open") // open / decided
+  relatedStudentId  String?
+  relatedStudent    Student?  @relation(fields: [relatedStudentId], references: [id], onDelete: SetNull)
+  relatedEmployeeId String?
+  relatedEmployee   Employee? @relation(fields: [relatedEmployeeId], references: [id], onDelete: SetNull)
+  createdBy         String // userId who opened the case
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("investigation_committees")
+}
+
+// مذكرة معلم إلى أخصائي (اجتماعي/نفسي/عرضي)
+model SpecialistReport {
+  id                   String   @id @default(cuid())
+  studentId            String
+  student              Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  submittedByTeacherId String // employeeId
+  content              String
+  fileUrl              String?
+  createdAt            DateTime @default(now())
+
+  @@map("specialist_reports")
+}
+
+// صندوق الشكاوى والمقترحات
+model Complaint {
+  id        String   @id @default(cuid())
+  type      String // شكوى / مقترح / استفسار
+  fromType  String // ولي أمر / طالب / زائر / عاملين
+  fromName  String?
+  contact   String?
+  content   String
+  status    String   @default("NEW")
+  enteredBy String // userId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("complaints")
+}
+
+// مجلس إدارة المدرسة
+model BoardMember {
+  id         String   @id @default(cuid())
+  name       String
+  schoolRole String
+  order      Int?
+  createdAt  DateTime @default(now())
+
+  @@map("board_members")
+}
+
+// لائحة الانضباط المدرسي
+model SchoolBylaw {
+  id        String   @id @default(cuid())
+  section   String
+  title     String
+  content   String
+  updatedBy String
+  updatedAt DateTime @updatedAt
+
+  @@map("school_bylaws")
+}
+
+// إعلان إداري على صفحة التواصل
+model AdminNotice {
+  id        String   @id @default(cuid())
+  content   String
+  date      DateTime @default(now())
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@map("admin_notices")
+}
+
+// مجموعات التواصل الرسمية
+model CommunicationGroup {
+  id          String   @id @default(cuid())
+  name        String
+  platform    String
+  link        String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@map("communication_groups")
+}
+
+// طالب فوق حد التميز لعمل خطة إثرائية
+model EnrichmentFlag {
+  id         String    @id @default(cuid())
+  studentId  String
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examId     String?
+  exam       Exam?     @relation(fields: [examId], references: [id], onDelete: SetNull)
+  subject    String
+  reason     String?
+  status     String    @default("OPEN")
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@map("enrichment_flags")
+}
+
+// مخالفة سلوكية مسجلة على طالب
+model StudentViolation {
+  id            String   @id @default(cuid())
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  severity      String // بسيطة / متوسطة / شديدة
+  description   String
+  recordedBy    String // userId
+  actionTaken   String?
+  actionTakenBy String? // userId
+  createdAt     DateTime @default(now())
+
+  @@map("student_violations")
+}
+
+// معسكرات / مشروعات / مسابقات
+model ActivityRecord {
+  id            String                  @id @default(cuid())
+  category      String // CAMP / PROJECT / COMPETITION
+  subtype       String
+  title         String?
+  startDate     DateTime?
+  endDate       DateTime?
+  createdBy     String
+  createdAt     DateTime                @default(now())
+  procedures    ActivityProcedure[]
+  documentation ActivityDocumentation[]
+
+  @@map("activity_records")
+}
+
+model ActivityProcedure {
+  id         String         @id @default(cuid())
+  activityId String
+  activity   ActivityRecord @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  notes      String?
+  fileUrl    String?
+  createdBy  String
+  createdAt  DateTime       @default(now())
+
+  @@map("activity_procedures")
+}
+
+model ActivityDocumentation {
+  id         String         @id @default(cuid())
+  activityId String
+  activity   ActivityRecord @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  photoUrl   String
+  caption    String?
+  uploadedBy String
+  createdAt  DateTime       @default(now())
+
+  @@map("activity_documentation")
+}

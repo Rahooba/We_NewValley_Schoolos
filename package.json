@@ -1,0 +1,46 @@
+{
+  "name": "schoolos-next",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "2.11.3",
+    "@prisma/adapter-pg": "7.9.1",
+    "@prisma/client": "7.9.1",
+    "@vercel/blob": "2.6.1",
+    "bcryptjs": "3.0.3",
+    "clsx": "2.1.1",
+    "docx": "^9.7.1",
+    "dotenv": "17.4.2",
+    "lucide-react": "1.28.0",
+    "next": "16.3.0",
+    "next-auth": "5.0.0-beta.32",
+    "papaparse": "5.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwind-merge": "3.6.0",
+    "xlsx": "0.18.5",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.1.2",
+    "@types/papaparse": "5.5.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "postcss": "8.5.25",
+    "prisma": "7.9.1",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.7",
+    "typescript": "7.0.2"
+  }
+}
