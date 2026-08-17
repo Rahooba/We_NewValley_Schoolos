@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { GRADE_LABELS, SLOTS_BY_LEVEL, slotLabel, MAX_SLOT_SCORE } from '@/lib/examSlots';
+import { GRADE_LABELS, SLOTS_BY_LEVEL, slotLabel } from '@/lib/examSlots';
 import { getRemedialThresholdPercent } from '@/lib/exams/settings';
 import { buildTierReport } from '@/lib/exams/tier-report';
 import { computeSubjectHealth } from '@/lib/exams/subject-health';
@@ -36,27 +36,32 @@ export default async function SlotMarksPage({
     }),
     prisma.formativeAssessment.findMany({
       where: { gradeLevel: level, slot },
-      select: { studentId: true, score: true, maxScore: true, className: true }
+      select: { studentId: true, subject: true, score: true, maxScore: true }
     }),
     buildTierReport(level, slotDef.key),
     getRemedialThresholdPercent()
   ]);
 
-  const scoresByClass = new Map<string, Map<string, number>>();
-  let initialMaxScore = MAX_SLOT_SCORE;
-  const maxScoreCounts = new Map<number, number>();
+  // Build existingScores: studentId -> (subject -> score)
+  const existingScores = new Map<string, Map<string, number>>();
+  // Build existingMaxScores: subject -> maxScore (most common per subject)
+  const maxScoreCounts = new Map<string, Map<number, number>>();
   for (const a of existing) {
-    if (!scoresByClass.has(a.className ?? '')) scoresByClass.set(a.className ?? '', new Map());
-    scoresByClass.get(a.className ?? '')?.set(a.studentId, Number(a.score));
+    if (!existingScores.has(a.studentId)) existingScores.set(a.studentId, new Map());
+    existingScores.get(a.studentId)!.set(a.subject, Number(a.score));
+    if (!maxScoreCounts.has(a.subject)) maxScoreCounts.set(a.subject, new Map());
     const ms = Number(a.maxScore);
-    if (ms > 0) {
-      maxScoreCounts.set(ms, (maxScoreCounts.get(ms) ?? 0) + 1);
-    }
+    const mc = maxScoreCounts.get(a.subject)!;
+    mc.set(ms, (mc.get(ms) ?? 0) + 1);
   }
-  // Use the most common maxScore from existing records
-  let maxCount = 0;
-  for (const [ms, count] of maxScoreCounts) {
-    if (count > maxCount) { maxCount = count; initialMaxScore = ms; }
+  const existingMaxScores = new Map<string, number>();
+  for (const [subj, counts] of maxScoreCounts) {
+    let bestMs = 100;
+    let bestCount = 0;
+    for (const [ms, count] of counts) {
+      if (count > bestCount) { bestMs = ms; bestCount = count; }
+    }
+    existingMaxScores.set(subj, bestMs);
   }
 
   return (
@@ -67,7 +72,7 @@ export default async function SlotMarksPage({
         </Link>
         <h1 className="text-2xl font-display mt-1">{slotLabel(slot)} — {GRADE_LABELS[level]}</h1>
         <p className="text-sm text-muted">
-          أدخل درجة كل طالب — الدرجة القصوى قابلة للتعديل لكل مادة
+          أدخل درجة كل طالب في جميع المواد — الدرجة القصوى 100 (ثابتة)
         </p>
       </div>
 
@@ -76,7 +81,6 @@ export default async function SlotMarksPage({
       <SlotMarksForm
         level={level}
         slot={slotDef.key}
-        subject={slotDef.label}
         classes={classes.map((c) => c.name)}
         students={students.map((s) => ({
           id: s.id,
@@ -85,8 +89,8 @@ export default async function SlotMarksPage({
           className: s.class?.name ?? '',
           sectionName: s.section?.name ?? '—'
         }))}
-        scoresByClass={scoresByClass}
-        initialMaxScore={initialMaxScore}
+        existingScores={existingScores}
+        existingMaxScores={existingMaxScores}
       />
 
       <TierReportTable data={tierReport} />

@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { MAX_SLOT_SCORE } from '@/lib/examSlots';
+import { MAX_SLOT_SCORE, FIXED_SUBJECTS } from '@/lib/examSlots';
 
 async function requirePermission(permission: string) {
   const session = await auth();
@@ -231,20 +231,39 @@ export async function saveSlotMarks(
   const gradeLevel = Number(formData.get('gradeLevel') ?? 0);
   const className = String(formData.get('className') ?? '').trim();
   const slot = String(formData.get('slot') ?? '').trim();
-  const subject = String(formData.get('subject') ?? '').trim();
-  const maxScore = Math.max(1, Number(formData.get('maxScore') ?? MAX_SLOT_SCORE));
-  if (![1, 2, 3].includes(gradeLevel) || !className || !slot || !subject) {
+  // Parse per-subject max scores from JSON
+  let subjectMaxScores: Record<string, number> = {};
+  try {
+    subjectMaxScores = JSON.parse(String(formData.get('maxScores') ?? '{}'));
+  } catch { /* ignore, default to 100 */ }
+  if (![1, 2, 3].includes(gradeLevel) || !className || !slot) {
     return { error: 'بيانات غير صحيحة' };
   }
 
-  const scores = new Map<string, number>();
+  // Parse form data: score_{studentId}_{subject}
+  // Format: score_{studentId}_{subject} — subject may contain spaces/arabic
+  const scores = new Map<string, Map<string, number>>();
+  const prefix = 'score_';
   for (const [rawKey, rawValue] of formData.entries()) {
-    if (!rawKey.startsWith('score_')) continue;
-    const studentId = rawKey.slice('score_'.length);
+    if (!rawKey.startsWith(prefix)) continue;
+    const rest = rawKey.slice(prefix.length);
+    // Find the subject by matching from the end against FIXED_SUBJECTS
+    let matchedSubject: string | null = null;
+    let studentId = '';
+    for (const subj of FIXED_SUBJECTS) {
+      if (rest.endsWith('_' + subj)) {
+        matchedSubject = subj;
+        studentId = rest.slice(0, rest.length - subj.length - 1);
+        break;
+      }
+    }
+    if (!matchedSubject || !studentId) continue;
     const score = Number(rawValue);
-    if (!studentId || Number.isNaN(score)) continue;
-    const clamped = Math.max(0, Math.min(maxScore, score));
-    scores.set(studentId, clamped);
+    if (Number.isNaN(score)) continue;
+    if (!scores.has(studentId)) scores.set(studentId, new Map());
+    const ms = subjectMaxScores[matchedSubject] ?? 100;
+    const clamped = Math.max(0, Math.min(ms, score));
+    scores.get(studentId)!.set(matchedSubject, clamped);
   }
 
   const classRow = await prisma.class.findFirst({ where: { name: className } });
@@ -255,29 +274,39 @@ export async function saveSlotMarks(
   });
 
   try {
+    // Get all existing assessments for this slot+class+gradeLevel
     const existing = await prisma.formativeAssessment.findMany({
       where: { gradeLevel, className, slot },
-      select: { id: true, studentId: true }
+      select: { id: true, studentId: true, subject: true }
     });
-    const existingMap = new Map(existing.map((a) => [a.studentId, a.id]));
+    // Map: studentId -> subject -> assessmentId
+    const existingMap = new Map<string, Map<string, string>>();
+    for (const a of existing) {
+      if (!existingMap.has(a.studentId)) existingMap.set(a.studentId, new Map());
+      existingMap.get(a.studentId)!.set(a.subject, a.id);
+    }
 
     for (const s of students) {
-      const score = scores.get(s.id);
-      if (score === undefined) continue;
-      const prevId = existingMap.get(s.id);
-      const data = {
-        studentId: s.id,
-        subject,
-        score: score,
-        maxScore: maxScore,
-        gradeLevel,
-        className,
-        slot
-      };
-      if (prevId) {
-        await prisma.formativeAssessment.update({ where: { id: prevId }, data });
-      } else {
-        await prisma.formativeAssessment.create({ data });
+      const studentScores = scores.get(s.id);
+      if (!studentScores) continue;
+      const studentExisting = existingMap.get(s.id) ?? new Map();
+
+      for (const [subject, score] of studentScores) {
+        const prevId = studentExisting.get(subject);
+        const data = {
+          studentId: s.id,
+          subject,
+          score,
+          maxScore: subjectMaxScores[subject] ?? 100,
+          gradeLevel,
+          className,
+          slot
+        };
+        if (prevId) {
+          await prisma.formativeAssessment.update({ where: { id: prevId }, data });
+        } else {
+          await prisma.formativeAssessment.create({ data });
+        }
       }
     }
   } catch (err) {

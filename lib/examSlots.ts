@@ -38,3 +38,16 @@ export const GROUP_LABELS: Record<SlotDef['group'], string> = {
 };
 
 export const MAX_SLOT_SCORE = 100;
+
+export const FIXED_SUBJECTS = [
+  'اللغة العربية',
+  'اللغة الإنجليزية',
+  'الفيزياء',
+  'الرياضيات',
+  'دراسات اجتماعية',
+  'المواد الفنية التخصصية النظرية',
+  'المواد الفنية التخصصية العملية',
+  'الاقتصاد',
+  'التدريب الميداني',
+  'التربية الدينية'
+] as const;
