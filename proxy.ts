@@ -6,8 +6,12 @@ import { findRequiredPermission } from '@/lib/nav';
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-
+  const token = await getToken({
+  req,
+  secret: process.env.AUTH_SECRET,
+  secureCookie: process.env.NODE_ENV === 'production'
+});
+  
   if (!token) {
     const loginUrl = new URL('/login', req.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
