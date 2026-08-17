@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { Calculator } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -57,14 +58,24 @@ export default async function ExamMarksPage({
     <div>
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-display">{exam.name}</h1>
-        {canManage && (
-          <form action={computeResults.bind(null, exam.id)}>
-            <button type="submit" className="btn-primary">
-              <Calculator size={16} />
-              حساب النتائج
-            </button>
-          </form>
-        )}
+        <div className="flex items-center gap-2">
+          {subjects.length > 0 && (
+            <Link
+              href={`/exams/final-results/${subjects[0].id}?examId=${exam.id}`}
+              className="text-xs text-brand border border-border rounded-sm px-3 py-1.5 hover:border-brand"
+            >
+              تقرير النتائج النهائية
+            </Link>
+          )}
+          {canManage && (
+            <form action={computeResults.bind(null, exam.id)}>
+              <button type="submit" className="btn-primary">
+                <Calculator size={16} />
+                حساب النتائج
+              </button>
+            </form>
+          )}
+        </div>
       </div>
       <p className="text-sm text-muted mb-6">إدخال درجات الطلاب لكل مادة</p>
 
