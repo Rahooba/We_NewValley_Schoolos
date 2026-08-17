@@ -12,6 +12,12 @@ export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 25;
 
+const STATUS_STYLES: Record<string, { chip: string; bar: string; label: string }> = {
+  strong: { chip: 'text-emerald-700 bg-emerald-50 border-emerald-200', bar: 'bg-emerald-500', label: 'ممتاز' },
+  watch: { chip: 'text-amber-700 bg-amber-50 border-amber-200', bar: 'bg-amber-500', label: 'متابعة' },
+  weak: { chip: 'text-red-700 bg-red-50 border-red-200', bar: 'bg-red-500', label: 'تحسيني' }
+};
+
 export default async function ExamsPage({
   searchParams
 }: {
@@ -80,6 +86,23 @@ export default async function ExamsPage({
     if (level) studentsByLevel.set(level, (studentsByLevel.get(level) ?? 0) + 1);
   }
 
+  // داشبورد المواد — نسبة النجاح في كل مادة عبر كل التكوينيات
+  const bySubject = new Map<string, { total: number; below: number }>();
+  for (const a of assessments) {
+    const key = a.subject;
+    const cur = bySubject.get(key) ?? { total: 0, below: 0 };
+    cur.total += 1;
+    if (Number(a.maxScore) > 0 && (Number(a.score) / Number(a.maxScore)) * 100 < remedialThreshold) {
+      cur.below += 1;
+    }
+    bySubject.set(key, cur);
+  }
+  const subjectHealth = Array.from(bySubject.entries()).map(([name, s]) => {
+    const passRate = s.total > 0 ? ((s.total - s.below) / s.total) * 100 : 0;
+    const status = passRate >= 80 ? 'strong' : passRate >= remedialThreshold ? 'watch' : 'weak';
+    return { name, passRate, status, total: s.total, below: s.below };
+  }).sort((a, b) => a.passRate - b.passRate);
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -113,6 +136,35 @@ export default async function ExamsPage({
           ))}
         </div>
       </section>
+
+      {subjectHealth.length > 0 && (
+        <section>
+          <h2 className="text-lg font-medium mb-3">ملخص الأداء حسب المادة (نسبة النجاح ≥ {remedialThreshold}%)</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {subjectHealth.map((s) => {
+              const style = STATUS_STYLES[s.status];
+              const rounded = Math.round(s.passRate * 10) / 10;
+              return (
+                <div key={s.name} className="card p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-sm font-medium">{s.name}</p>
+                    <span className={`text-xs rounded-full border px-2 py-0.5 ${style.chip}`}>
+                      {rounded}% — {style.label}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-paper overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${style.bar}`}
+                      style={{ width: `${Math.min(100, Math.max(0, s.passRate))}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted mt-1">{s.total} طالب — {s.below} تحسيني</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {canSeeRemedial && (
         <section>

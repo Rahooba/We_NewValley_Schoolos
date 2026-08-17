@@ -36,16 +36,27 @@ export default async function SlotMarksPage({
     }),
     prisma.formativeAssessment.findMany({
       where: { gradeLevel: level, slot },
-      select: { studentId: true, score: true, className: true }
+      select: { studentId: true, score: true, maxScore: true, className: true }
     }),
     buildTierReport(level, slotDef.key),
     getRemedialThresholdPercent()
   ]);
 
   const scoresByClass = new Map<string, Map<string, number>>();
+  let initialMaxScore = MAX_SLOT_SCORE;
+  const maxScoreCounts = new Map<number, number>();
   for (const a of existing) {
     if (!scoresByClass.has(a.className ?? '')) scoresByClass.set(a.className ?? '', new Map());
     scoresByClass.get(a.className ?? '')?.set(a.studentId, Number(a.score));
+    const ms = Number(a.maxScore);
+    if (ms > 0) {
+      maxScoreCounts.set(ms, (maxScoreCounts.get(ms) ?? 0) + 1);
+    }
+  }
+  // Use the most common maxScore from existing records
+  let maxCount = 0;
+  for (const [ms, count] of maxScoreCounts) {
+    if (count > maxCount) { maxCount = count; initialMaxScore = ms; }
   }
 
   return (
@@ -56,7 +67,7 @@ export default async function SlotMarksPage({
         </Link>
         <h1 className="text-2xl font-display mt-1">{slotLabel(slot)} — {GRADE_LABELS[level]}</h1>
         <p className="text-sm text-muted">
-          أدخل درجة كل طالب من {MAX_SLOT_SCORE} (درجة واحدة لكل طالب، قابلة للتعديل)
+          أدخل درجة كل طالب — الدرجة القصوى قابلة للتعديل لكل مادة
         </p>
       </div>
 
@@ -75,6 +86,7 @@ export default async function SlotMarksPage({
           sectionName: s.section?.name ?? '—'
         }))}
         scoresByClass={scoresByClass}
+        initialMaxScore={initialMaxScore}
       />
 
       <TierReportTable data={tierReport} />

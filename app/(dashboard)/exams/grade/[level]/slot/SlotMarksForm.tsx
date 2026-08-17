@@ -5,7 +5,6 @@ import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Loader2 } from 'lucide-react';
 import { saveSlotMarks, type ActionState } from '../../../actions';
-import { MAX_SLOT_SCORE } from '@/lib/examSlots';
 
 const initial: ActionState = {};
 
@@ -25,7 +24,8 @@ export function SlotMarksForm({
   subject,
   classes,
   students,
-  scoresByClass
+  scoresByClass,
+  initialMaxScore
 }: {
   level: number;
   slot: string;
@@ -33,9 +33,11 @@ export function SlotMarksForm({
   classes: string[];
   students: { id: string; fullName: string; studentCode: string; className: string; sectionName: string }[];
   scoresByClass: Map<string, Map<string, number>>;
+  initialMaxScore?: number;
 }) {
   const [state, action] = useActionState(saveSlotMarks, initial);
   const [className, setClassName] = useState(classes[0] ?? '');
+  const [maxScore, setMaxScore] = useState(initialMaxScore ?? 100);
 
   const classStudents = useMemo(
     () => students.filter((s) => s.className === className),
@@ -49,6 +51,7 @@ export function SlotMarksForm({
       <input type="hidden" name="slot" value={slot} />
       <input type="hidden" name="subject" value={subject} />
       <input type="hidden" name="className" value={className} />
+      <input type="hidden" name="maxScore" value={maxScore} />
 
       <div className="card p-4 flex items-center gap-3 flex-wrap">
         <span className="text-sm text-muted">الفصل:</span>
@@ -66,6 +69,19 @@ export function SlotMarksForm({
         ))}
       </div>
 
+      <div className="card p-4 flex items-center gap-3">
+        <label className="text-sm text-muted">الدرجة القصوى:</label>
+        <input
+          type="number"
+          min="1"
+          max="1000"
+          value={maxScore}
+          onChange={(e) => setMaxScore(Number(e.target.value) || 100)}
+          className="input-field text-sm w-24"
+        />
+        <span className="text-xs text-muted">(تختلف من مادة للتانية)</span>
+      </div>
+
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state.success && <p className="text-sm text-emerald-600">تم حفظ الدرجات</p>}
 
@@ -77,7 +93,7 @@ export function SlotMarksForm({
               <th className="px-4 py-2 font-medium">الكود</th>
               <th className="px-4 py-2 font-medium">الطالب</th>
               <th className="px-4 py-2 font-medium">الفرع</th>
-              <th className="px-4 py-2 font-medium">الدرجة (من {MAX_SLOT_SCORE})</th>
+              <th className="px-4 py-2 font-medium">الدرجة (من {maxScore})</th>
             </tr>
           </thead>
           <tbody>
@@ -99,7 +115,7 @@ export function SlotMarksForm({
                     <input
                       type="number"
                       min="0"
-                      max={MAX_SLOT_SCORE}
+                      max={maxScore}
                       step="0.01"
                       name={`score_${s.id}`}
                       defaultValue={value ?? ''}

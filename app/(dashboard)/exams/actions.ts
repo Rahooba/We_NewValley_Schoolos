@@ -232,6 +232,7 @@ export async function saveSlotMarks(
   const className = String(formData.get('className') ?? '').trim();
   const slot = String(formData.get('slot') ?? '').trim();
   const subject = String(formData.get('subject') ?? '').trim();
+  const maxScore = Math.max(1, Number(formData.get('maxScore') ?? MAX_SLOT_SCORE));
   if (![1, 2, 3].includes(gradeLevel) || !className || !slot || !subject) {
     return { error: 'بيانات غير صحيحة' };
   }
@@ -242,7 +243,7 @@ export async function saveSlotMarks(
     const studentId = rawKey.slice('score_'.length);
     const score = Number(rawValue);
     if (!studentId || Number.isNaN(score)) continue;
-    const clamped = Math.max(0, Math.min(MAX_SLOT_SCORE, score));
+    const clamped = Math.max(0, Math.min(maxScore, score));
     scores.set(studentId, clamped);
   }
 
@@ -268,7 +269,7 @@ export async function saveSlotMarks(
         studentId: s.id,
         subject,
         score: score,
-        maxScore: MAX_SLOT_SCORE,
+        maxScore: maxScore,
         gradeLevel,
         className,
         slot
