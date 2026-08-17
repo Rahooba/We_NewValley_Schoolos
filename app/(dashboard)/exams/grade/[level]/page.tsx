@@ -74,12 +74,17 @@ const analysis = gradeStudents.map((s) => {
             {enrichmentThreshold}%
           </p>
         </div>
-        <PermissionGate permission="exams.manage">
-          <Link href={`/exams/new?gradeLevel=${level}`} className="btn-primary">
-            <Plus size={16} />
-            امتحان فصل دراسي جديد
+        <div className="flex items-center gap-2">
+          <Link href={`/exams/grade/${level}/report`} className="btn-secondary text-sm">
+            التقرير التحليلي
           </Link>
-        </PermissionGate>
+          <PermissionGate permission="exams.manage">
+            <Link href={`/exams/new?gradeLevel=${level}`} className="btn-primary">
+              <Plus size={16} />
+              امتحان فصل دراسي جديد
+            </Link>
+          </PermissionGate>
+        </div>
       </div>
 
       {groups.map((g) => (
