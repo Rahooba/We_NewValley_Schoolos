@@ -18,23 +18,25 @@ function SubmitBtn() {
 }
 
 export function PointForm({
-  schedules,
-  dateLabel
+  employees,
+  dateLabel,
+  date
 }: {
-  schedules: { id: string; label: string }[];
+  employees: { id: string; label: string }[];
   dateLabel: string;
+  date: string;
 }) {
   const [state, action] = useActionState(addPoint, initial);
   return (
     <form action={action} className="card p-5 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end mb-6">
-      <input type="hidden" name="dateLabel" value={dateLabel} />
+      <input type="hidden" name="date" value={date} />
       <div>
         <label className="block text-xs text-muted mb-1">المشرف المسجل</label>
-        <select name="scheduleId" required className="input-field text-sm">
+        <select name="employeeId" required className="input-field text-sm">
           <option value="">— اختر —</option>
-          {schedules.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
+          {employees.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.label}
             </option>
           ))}
         </select>

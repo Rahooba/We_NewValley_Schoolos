@@ -69,7 +69,8 @@ export async function deleteSupervision(id: string) {
 }
 
 const pointSchema = z.object({
-  scheduleId: z.string().min(1, 'اختر المشرف'),
+  employeeId: z.string().min(1, 'اختر المشرف'),
+  date: z.string().min(1, 'التاريخ مطلوب').regex(/^\d{4}-\d{2}-\d{2}$/),
   description: z.string().optional().or(z.literal(''))
 });
 
@@ -82,13 +83,12 @@ export async function addPoint(_prev: ActionState, formData: FormData): Promise<
   const hasFile = !!file && file.size > 0;
 
   const parsed = pointSchema.safeParse({
-    scheduleId: String(formData.get('scheduleId') ?? ''),
+    employeeId: String(formData.get('employeeId') ?? ''),
+    date: String(formData.get('date') ?? ''),
     description: String(formData.get('description') ?? '').trim()
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'بيانات غير صحيحة' };
 
-  // A point may carry a PDF with no text (or text with no file) — at least one
-  // of the two must be present.
   if (!parsed.data.description && !hasFile) {
     return { error: 'اكتب وصف النقطة أو ارفق ملفًا' };
   }
@@ -96,20 +96,28 @@ export async function addPoint(_prev: ActionState, formData: FormData): Promise<
     return { error: 'يجب رفع ملف بصيغة PDF' };
   }
 
-  const schedule = await prisma.supervisionSchedule.findUnique({
-    where: { id: parsed.data.scheduleId },
-    select: { employeeId: true, date: true }
+  const date = new Date(`${parsed.data.date}T00:00:00`);
+  const end = new Date(date);
+  end.setDate(end.getDate() + 1);
+
+  // Find or create schedule for this employee on this date.
+  let schedule = await prisma.supervisionSchedule.findFirst({
+    where: { employeeId: parsed.data.employeeId, date: { gte: date, lt: end } },
+    select: { id: true, employeeId: true, date: true }
   });
-  if (!schedule) return { error: 'الجدول غير موجود' };
+  if (!schedule) {
+    schedule = await prisma.supervisionSchedule.create({
+      data: { employeeId: parsed.data.employeeId, date },
+      select: { id: true, employeeId: true, date: true }
+    });
+  }
 
   // Only the supervisors assigned that day (or managers) may add points.
   const myEmployeeId = (session?.user as any)?.employeeId;
-  const date = new Date(schedule.date);
-  date.setHours(0, 0, 0, 0);
   const isAssignedToday =
     myEmployeeId &&
     (await prisma.supervisionSchedule.count({
-      where: { employeeId: myEmployeeId, date: { gte: date, lt: new Date(date.getTime() + 86400000) } }
+      where: { employeeId: myEmployeeId, date: { gte: date, lt: end } }
     })) > 0;
 
   if (!isManager && !isAssignedToday) return { error: 'لا يمكنك تسجيل نقاط — لست مشرفًا لهذا اليوم' };
@@ -119,7 +127,7 @@ export async function addPoint(_prev: ActionState, formData: FormData): Promise<
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     try {
       const blob = await uploadPrivateFile(
-        `supervision/${parsed.data.scheduleId}-${Date.now()}-${safeName}`,
+        `supervision/${schedule.id}-${Date.now()}-${safeName}`,
         file,
         { contentType: 'application/pdf' }
       );
@@ -135,7 +143,7 @@ export async function addPoint(_prev: ActionState, formData: FormData): Promise<
   try {
     await prisma.supervisionPoint.create({
       data: {
-        scheduleId: parsed.data.scheduleId,
+        scheduleId: schedule.id,
         description: parsed.data.description ?? '',
         fileUrl
       }

@@ -220,11 +220,6 @@ export default async function SupervisionPage({
   const excludedAbsentCount = employees.filter((e) => absentIdSet.has(e.id)).length;
 
   const employeeOptions = assignableEmployees.map((e) => ({ id: e.id, label: `${e.fullName} (${e.employeeCode})` }));
-  const scheduleOptions = schedules.map((s) => ({
-    id: s.id,
-    label: `${s.employee.fullName}${s.area ? ' — ' + s.area : ''}`
-  }));
-
   const isAssignedToday = myEmployeeId
     ? schedules.some((s) => s.employeeId === myEmployeeId)
     : false;
@@ -336,10 +331,10 @@ export default async function SupervisionPage({
         </div>
       </section>
 
-      {canAddPoints && scheduleOptions.length > 0 && (
+      {canAddPoints && (
         <section>
           <h2 className="text-lg font-medium mb-3">تسجيل نقطة إشراف</h2>
-          <PointForm schedules={scheduleOptions} dateLabel={fmt(start)} />
+          <PointForm employees={employeeOptions} dateLabel={fmt(start)} date={dateStr ?? iso(start)} />
         </section>
       )}
 
