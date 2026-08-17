@@ -35,7 +35,7 @@ export default async function SupervisionPage({
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   const fmt = (d: Date) => d.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-  const [schedules, employees] = await Promise.all([
+  const [schedules, employees, attendanceRows] = await Promise.all([
     prisma.supervisionSchedule.findMany({
       where: { date: { gte: start, lt: end } },
       include: { employee: true, points: { orderBy: { createdAt: 'desc' } } },
@@ -45,10 +45,28 @@ export default async function SupervisionPage({
       where: { status: 'ACTIVE' },
       select: { id: true, fullName: true, employeeCode: true },
       orderBy: { fullName: 'asc' }
+    }),
+    prisma.employeeAttendance.findMany({
+      where: { date: { gte: start, lt: end } },
+      select: { employeeId: true, status: true }
     })
   ]);
 
-  const employeeOptions = employees.map((e) => ({ id: e.id, label: `${e.fullName} (${e.employeeCode})` }));
+  // Reuses the same EmployeeAttendance data as the attendance-marking flow —
+  // never a second/parallel attendance source.
+  const attendanceMarked = attendanceRows.length > 0;
+  const absentIdSet = new Set(
+    attendanceRows.filter((a) => a.status === 'ABSENT').map((a) => a.employeeId)
+  );
+  // An absent teacher must never be assignable — but only when attendance was
+  // actually marked for this day; otherwise absence is unknown and the UI says so
+  // instead of silently assuming everyone is present.
+  const assignableEmployees = attendanceMarked
+    ? employees.filter((e) => !absentIdSet.has(e.id))
+    : employees;
+  const excludedAbsentCount = employees.filter((e) => absentIdSet.has(e.id)).length;
+
+  const employeeOptions = assignableEmployees.map((e) => ({ id: e.id, label: `${e.fullName} (${e.employeeCode})` }));
   const scheduleOptions = schedules.map((s) => ({
     id: s.id,
     label: `${s.employee.fullName}${s.area ? ' — ' + s.area : ''}`
@@ -85,7 +103,31 @@ export default async function SupervisionPage({
         </Link>
       </div>
 
-      {canManage && <SupervisionForm employees={employeeOptions} date={dateStr ?? iso(start)} />}
+      {canManage && (
+        <div className="space-y-3">
+          {attendanceMarked === false &&
+            start.toDateString() === new Date().toDateString() && (
+              <div className="card p-4 border-amber-300 bg-amber-50 text-sm text-amber-800 flex items-center justify-between gap-3 flex-wrap">
+                <p>
+                  تنبيه: حضور اليوم لم يُسجَّل بعد — ستظهر كل الموظفين في قائمة المشرفين ولن يُستبعد
+                  الغائبون تلقائيًا.
+                </p>
+                <Link
+                  href="/attendance/employees"
+                  className="text-xs text-amber-800 border border-amber-300 rounded-sm px-3 py-1.5 hover:bg-amber-100 shrink-0"
+                >
+                  تسجيل الحضور أولاً
+                </Link>
+              </div>
+            )}
+          {attendanceMarked && excludedAbsentCount > 0 && (
+            <p className="text-xs text-muted">
+              تم استبعاد {excludedAbsentCount} موظف غائب اليوم من قائمة المشرفين
+            </p>
+          )}
+          <SupervisionForm employees={employeeOptions} date={dateStr ?? iso(start)} />
+        </div>
+      )}
 
       <section>
         <h2 className="text-lg font-medium mb-3">مشرفو اليوم</h2>

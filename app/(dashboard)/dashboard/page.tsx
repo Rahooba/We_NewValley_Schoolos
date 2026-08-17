@@ -182,7 +182,7 @@ async function OperationsCards() {
         icon={<BookOpenCheck size={18} className="text-brand" />}
         value={openRemedialFlags}
         subtitle="طلاب بحاجة متابعة علاجية"
-        detailHref="/exams/remedial"
+        detailHref="/exams"
       />
     </div>
   );

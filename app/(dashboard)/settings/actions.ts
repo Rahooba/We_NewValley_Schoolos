@@ -35,7 +35,8 @@ export async function updateSettings(
     return { error: 'حدث خطأ أثناء الحفظ' };
   }
   revalidatePath('/settings');
-  revalidatePath('/exams/remedial');
+  revalidatePath('/exams');
+  revalidatePath('/exams/grade');
   revalidatePath('/quality/warnings');
   return { success: true };
 }

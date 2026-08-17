@@ -2,7 +2,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { GRADE_LABELS, SLOTS_BY_LEVEL, slotLabel, MAX_SLOT_SCORE } from '@/lib/examSlots';
+import { getRemedialThresholdPercent } from '@/lib/exams/settings';
+import { buildTierReport } from '@/lib/exams/tier-report';
+import { computeSubjectHealth } from '@/lib/exams/subject-health';
 import { SlotMarksForm } from './SlotMarksForm';
+import { TierReportTable } from './TierReportTable';
+import { SubjectHealthBar } from './SubjectHealthBar';
+import { RemedialLinkBanner } from './RemedialLinkBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +27,7 @@ export default async function SlotMarksPage({
   const slotDef = slots.find((s) => s.key === slot);
   if (!slotDef) notFound();
 
-  const [classes, students, existing] = await Promise.all([
+  const [classes, students, existing, tierReport, remedialThreshold] = await Promise.all([
     prisma.class.findMany({ where: { level }, orderBy: { name: 'asc' } }),
     prisma.student.findMany({
       where: { status: 'ACTIVE', class: { level } },
@@ -31,7 +37,9 @@ export default async function SlotMarksPage({
     prisma.formativeAssessment.findMany({
       where: { gradeLevel: level, slot },
       select: { studentId: true, score: true, className: true }
-    })
+    }),
+    buildTierReport(level, slotDef.key),
+    getRemedialThresholdPercent()
   ]);
 
   const scoresByClass = new Map<string, Map<string, number>>();
@@ -52,6 +60,8 @@ export default async function SlotMarksPage({
         </p>
       </div>
 
+      <SubjectHealthBar data={computeSubjectHealth(tierReport, remedialThreshold)} threshold={remedialThreshold} />
+
       <SlotMarksForm
         level={level}
         slot={slotDef.key}
@@ -66,6 +76,10 @@ export default async function SlotMarksPage({
         }))}
         scoresByClass={scoresByClass}
       />
+
+      <TierReportTable data={tierReport} />
+
+      <RemedialLinkBanner gradeLevel={level} />
     </div>
   );
 }

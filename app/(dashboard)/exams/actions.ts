@@ -285,6 +285,7 @@ export async function saveSlotMarks(
   }
 
   revalidatePath(`/exams/grade/${gradeLevel}`);
+  revalidatePath(`/exams/grade/${gradeLevel}/slot`);
   revalidatePath('/exams');
   return { success: true };
 }

@@ -19,7 +19,6 @@ export type NavItem = {
     | 'social'
     | 'psychological'
     | 'professional'
-    | 'remedial'
     | 'warnings'
     | 'schedule'
     | 'documentation'
@@ -117,12 +116,12 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Academics', labelAr: 'العملية التعليمية', href: '/academics', group: 'العملية التعليمية', icon: 'academics', permission: 'academics.view' },
   { label: 'Exams', labelAr: 'الامتحانات', href: '/exams', group: 'العملية التعليمية', icon: 'exams', permission: 'exams.view' },
   {
-    label: 'Remedial',
-    labelAr: 'المتابعة العلاجية',
-    href: '/exams/remedial',
+    label: 'Supervision Schedule',
+    labelAr: 'جدول الإشراف اليومي',
+    href: '/supervision',
     group: 'العملية التعليمية',
-    icon: 'remedial',
-    permission: 'remedial.view'
+    icon: 'supervision',
+    permission: 'supervision.view'
   },
 
   // ===== الجودة =====
@@ -328,14 +327,6 @@ export const NAV_ITEMS: NavItem[] = [
     permission: 'workshops.view'
   },
   {
-    label: 'Supervision Schedule',
-    labelAr: 'جدول الإشراف اليومي',
-    href: '/supervision',
-    group: 'الأمن والمرافق',
-    icon: 'supervision',
-    permission: 'supervision.view'
-  },
-  {
     label: 'Clinic',
     labelAr: 'العيادة المدرسية',
     href: '/clinic',
@@ -423,7 +414,6 @@ export const ROUTE_PERMISSIONS: { prefix: string; permission: string | string[] 
   { prefix: '/academics/files', permission: 'lesson_plans.manage' },
   { prefix: '/academics', permission: 'academics.view' },
   { prefix: '/exams', permission: 'exams.view' },
-  { prefix: '/exams/remedial', permission: 'remedial.view' },
   { prefix: '/inventory', permission: 'inventory.view' },
   { prefix: '/visitors', permission: 'visitors.view' },
   { prefix: '/quality/improvement-plans', permission: 'improvement_plans.view' },
