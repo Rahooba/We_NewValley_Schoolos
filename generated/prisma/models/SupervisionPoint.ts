@@ -28,6 +28,7 @@ export type SupervisionPointMinAggregateOutputType = {
   id: string | null
   scheduleId: string | null
   description: string | null
+  fileUrl: string | null
   status: string | null
   createdAt: Date | null
 }
@@ -36,6 +37,7 @@ export type SupervisionPointMaxAggregateOutputType = {
   id: string | null
   scheduleId: string | null
   description: string | null
+  fileUrl: string | null
   status: string | null
   createdAt: Date | null
 }
@@ -44,6 +46,7 @@ export type SupervisionPointCountAggregateOutputType = {
   id: number
   scheduleId: number
   description: number
+  fileUrl: number
   status: number
   createdAt: number
   _all: number
@@ -54,6 +57,7 @@ export type SupervisionPointMinAggregateInputType = {
   id?: true
   scheduleId?: true
   description?: true
+  fileUrl?: true
   status?: true
   createdAt?: true
 }
@@ -62,6 +66,7 @@ export type SupervisionPointMaxAggregateInputType = {
   id?: true
   scheduleId?: true
   description?: true
+  fileUrl?: true
   status?: true
   createdAt?: true
 }
@@ -70,6 +75,7 @@ export type SupervisionPointCountAggregateInputType = {
   id?: true
   scheduleId?: true
   description?: true
+  fileUrl?: true
   status?: true
   createdAt?: true
   _all?: true
@@ -151,6 +157,7 @@ export type SupervisionPointGroupByOutputType = {
   id: string
   scheduleId: string
   description: string
+  fileUrl: string | null
   status: string
   createdAt: Date
   _count: SupervisionPointCountAggregateOutputType | null
@@ -180,6 +187,7 @@ export type SupervisionPointWhereInput = {
   id?: Prisma.StringFilter<"SupervisionPoint"> | string
   scheduleId?: Prisma.StringFilter<"SupervisionPoint"> | string
   description?: Prisma.StringFilter<"SupervisionPoint"> | string
+  fileUrl?: Prisma.StringNullableFilter<"SupervisionPoint"> | string | null
   status?: Prisma.StringFilter<"SupervisionPoint"> | string
   createdAt?: Prisma.DateTimeFilter<"SupervisionPoint"> | Date | string
   schedule?: Prisma.XOR<Prisma.SupervisionScheduleScalarRelationFilter, Prisma.SupervisionScheduleWhereInput>
@@ -189,6 +197,7 @@ export type SupervisionPointOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   scheduleId?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  fileUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   schedule?: Prisma.SupervisionScheduleOrderByWithRelationInput
@@ -201,6 +210,7 @@ export type SupervisionPointWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.SupervisionPointWhereInput | Prisma.SupervisionPointWhereInput[]
   scheduleId?: Prisma.StringFilter<"SupervisionPoint"> | string
   description?: Prisma.StringFilter<"SupervisionPoint"> | string
+  fileUrl?: Prisma.StringNullableFilter<"SupervisionPoint"> | string | null
   status?: Prisma.StringFilter<"SupervisionPoint"> | string
   createdAt?: Prisma.DateTimeFilter<"SupervisionPoint"> | Date | string
   schedule?: Prisma.XOR<Prisma.SupervisionScheduleScalarRelationFilter, Prisma.SupervisionScheduleWhereInput>
@@ -210,6 +220,7 @@ export type SupervisionPointOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   scheduleId?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  fileUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.SupervisionPointCountOrderByAggregateInput
@@ -224,6 +235,7 @@ export type SupervisionPointScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"SupervisionPoint"> | string
   scheduleId?: Prisma.StringWithAggregatesFilter<"SupervisionPoint"> | string
   description?: Prisma.StringWithAggregatesFilter<"SupervisionPoint"> | string
+  fileUrl?: Prisma.StringNullableWithAggregatesFilter<"SupervisionPoint"> | string | null
   status?: Prisma.StringWithAggregatesFilter<"SupervisionPoint"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SupervisionPoint"> | Date | string
 }
@@ -231,6 +243,7 @@ export type SupervisionPointScalarWhereWithAggregatesInput = {
 export type SupervisionPointCreateInput = {
   id?: string
   description: string
+  fileUrl?: string | null
   status?: string
   createdAt?: Date | string
   schedule: Prisma.SupervisionScheduleCreateNestedOneWithoutPointsInput
@@ -240,6 +253,7 @@ export type SupervisionPointUncheckedCreateInput = {
   id?: string
   scheduleId: string
   description: string
+  fileUrl?: string | null
   status?: string
   createdAt?: Date | string
 }
@@ -247,6 +261,7 @@ export type SupervisionPointUncheckedCreateInput = {
 export type SupervisionPointUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   schedule?: Prisma.SupervisionScheduleUpdateOneRequiredWithoutPointsNestedInput
@@ -256,6 +271,7 @@ export type SupervisionPointUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scheduleId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -264,6 +280,7 @@ export type SupervisionPointCreateManyInput = {
   id?: string
   scheduleId: string
   description: string
+  fileUrl?: string | null
   status?: string
   createdAt?: Date | string
 }
@@ -271,6 +288,7 @@ export type SupervisionPointCreateManyInput = {
 export type SupervisionPointUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -279,6 +297,7 @@ export type SupervisionPointUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scheduleId?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -297,6 +316,7 @@ export type SupervisionPointCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scheduleId?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  fileUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -305,6 +325,7 @@ export type SupervisionPointMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scheduleId?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  fileUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -313,6 +334,7 @@ export type SupervisionPointMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scheduleId?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  fileUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -362,6 +384,7 @@ export type SupervisionPointUncheckedUpdateManyWithoutScheduleNestedInput = {
 export type SupervisionPointCreateWithoutScheduleInput = {
   id?: string
   description: string
+  fileUrl?: string | null
   status?: string
   createdAt?: Date | string
 }
@@ -369,6 +392,7 @@ export type SupervisionPointCreateWithoutScheduleInput = {
 export type SupervisionPointUncheckedCreateWithoutScheduleInput = {
   id?: string
   description: string
+  fileUrl?: string | null
   status?: string
   createdAt?: Date | string
 }
@@ -406,6 +430,7 @@ export type SupervisionPointScalarWhereInput = {
   id?: Prisma.StringFilter<"SupervisionPoint"> | string
   scheduleId?: Prisma.StringFilter<"SupervisionPoint"> | string
   description?: Prisma.StringFilter<"SupervisionPoint"> | string
+  fileUrl?: Prisma.StringNullableFilter<"SupervisionPoint"> | string | null
   status?: Prisma.StringFilter<"SupervisionPoint"> | string
   createdAt?: Prisma.DateTimeFilter<"SupervisionPoint"> | Date | string
 }
@@ -413,6 +438,7 @@ export type SupervisionPointScalarWhereInput = {
 export type SupervisionPointCreateManyScheduleInput = {
   id?: string
   description: string
+  fileUrl?: string | null
   status?: string
   createdAt?: Date | string
 }
@@ -420,6 +446,7 @@ export type SupervisionPointCreateManyScheduleInput = {
 export type SupervisionPointUpdateWithoutScheduleInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -427,6 +454,7 @@ export type SupervisionPointUpdateWithoutScheduleInput = {
 export type SupervisionPointUncheckedUpdateWithoutScheduleInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -434,6 +462,7 @@ export type SupervisionPointUncheckedUpdateWithoutScheduleInput = {
 export type SupervisionPointUncheckedUpdateManyWithoutScheduleInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
+  fileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -444,6 +473,7 @@ export type SupervisionPointSelect<ExtArgs extends runtime.Types.Extensions.Inte
   id?: boolean
   scheduleId?: boolean
   description?: boolean
+  fileUrl?: boolean
   status?: boolean
   createdAt?: boolean
   schedule?: boolean | Prisma.SupervisionScheduleDefaultArgs<ExtArgs>
@@ -453,6 +483,7 @@ export type SupervisionPointSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   scheduleId?: boolean
   description?: boolean
+  fileUrl?: boolean
   status?: boolean
   createdAt?: boolean
   schedule?: boolean | Prisma.SupervisionScheduleDefaultArgs<ExtArgs>
@@ -462,6 +493,7 @@ export type SupervisionPointSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   scheduleId?: boolean
   description?: boolean
+  fileUrl?: boolean
   status?: boolean
   createdAt?: boolean
   schedule?: boolean | Prisma.SupervisionScheduleDefaultArgs<ExtArgs>
@@ -471,11 +503,12 @@ export type SupervisionPointSelectScalar = {
   id?: boolean
   scheduleId?: boolean
   description?: boolean
+  fileUrl?: boolean
   status?: boolean
   createdAt?: boolean
 }
 
-export type SupervisionPointOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scheduleId" | "description" | "status" | "createdAt", ExtArgs["result"]["supervisionPoint"]>
+export type SupervisionPointOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scheduleId" | "description" | "fileUrl" | "status" | "createdAt", ExtArgs["result"]["supervisionPoint"]>
 export type SupervisionPointInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   schedule?: boolean | Prisma.SupervisionScheduleDefaultArgs<ExtArgs>
 }
@@ -495,6 +528,7 @@ export type $SupervisionPointPayload<ExtArgs extends runtime.Types.Extensions.In
     id: string
     scheduleId: string
     description: string
+    fileUrl: string | null
     status: string
     createdAt: Date
   }, ExtArgs["result"]["supervisionPoint"]>
@@ -924,6 +958,7 @@ export interface SupervisionPointFieldRefs {
   readonly id: Prisma.FieldRef<"SupervisionPoint", 'String'>
   readonly scheduleId: Prisma.FieldRef<"SupervisionPoint", 'String'>
   readonly description: Prisma.FieldRef<"SupervisionPoint", 'String'>
+  readonly fileUrl: Prisma.FieldRef<"SupervisionPoint", 'String'>
   readonly status: Prisma.FieldRef<"SupervisionPoint", 'String'>
   readonly createdAt: Prisma.FieldRef<"SupervisionPoint", 'DateTime'>
 }

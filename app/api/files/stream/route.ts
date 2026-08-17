@@ -62,7 +62,8 @@ function asciiFallback(value: string): string {
 // through this shared route.
 const PATHNAME_PERMISSIONS: { prefix: string; permission: string }[] = [
   { prefix: 'activities/', permission: 'camps.manage' },
-  { prefix: 'lesson-plans/', permission: 'lesson_plans.manage' }
+  { prefix: 'lesson-plans/', permission: 'lesson_plans.manage' },
+  { prefix: 'supervision/', permission: 'supervision.view' }
 ];
 
 export async function GET(request: NextRequest) {

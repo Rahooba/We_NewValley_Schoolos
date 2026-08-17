@@ -790,6 +790,7 @@ model SupervisionPoint {
   scheduleId  String
   schedule    SupervisionSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   description String
+  fileUrl     String? // مرفق PDF خاص (Vercel Blob) — يُعرض عبر /api/files/stream فقط
   status      String              @default("noted") // noted / resolved
   createdAt   DateTime            @default(now())
 

@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { FileText } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { startOfToday, endOfToday, startOfWeek, toISODateLocal } from '@/lib/date';
+import { blobViewUrl } from '@/lib/blob-view-url';
 import { DeleteButton } from '@/components/DeleteButton';
 import { SupervisionForm } from './SupervisionForm';
 import { PointForm } from './PointForm';
@@ -356,6 +358,15 @@ export default async function SupervisionPage({
                     {s.area ? ` — ${s.area}` : ''}
                   </p>
                   <p className="text-sm text-ink mt-1">{p.description}</p>
+                  {p.fileUrl && (
+                    <a
+                      href={blobViewUrl(p.fileUrl, true)}
+                      download
+                      className="inline-flex items-center gap-1 text-xs text-brand hover:underline mt-1"
+                    >
+                      <FileText size={12} /> تحميل المرفق (PDF)
+                    </a>
+                  )}
                   <p className="text-xs text-muted mt-1">{new Date(p.createdAt).toLocaleString('ar-EG')}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

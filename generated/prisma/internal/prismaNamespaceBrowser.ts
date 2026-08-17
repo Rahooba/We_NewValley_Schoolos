@@ -824,6 +824,7 @@ export const SupervisionPointScalarFieldEnum = {
   id: 'id',
   scheduleId: 'scheduleId',
   description: 'description',
+  fileUrl: 'fileUrl',
   status: 'status',
   createdAt: 'createdAt'
 } as const

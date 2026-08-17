@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { uploadPrivateFile } from '@/lib/blob-upload';
 
 async function requirePermission(permission: string) {
   const session = await auth();
@@ -69,7 +70,7 @@ export async function deleteSupervision(id: string) {
 
 const pointSchema = z.object({
   scheduleId: z.string().min(1, 'اختر المشرف'),
-  description: z.string().min(3, 'اكتب وصف النقطة')
+  description: z.string().optional().or(z.literal(''))
 });
 
 export async function addPoint(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -77,11 +78,23 @@ export async function addPoint(_prev: ActionState, formData: FormData): Promise<
   const permissions = ((session?.user as any)?.permissions ?? []) as string[];
   const isManager = permissions.includes('supervision.manage');
 
+  const file = formData.get('file') as File | null;
+  const hasFile = !!file && file.size > 0;
+
   const parsed = pointSchema.safeParse({
     scheduleId: String(formData.get('scheduleId') ?? ''),
     description: String(formData.get('description') ?? '').trim()
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'بيانات غير صحيحة' };
+
+  // A point may carry a PDF with no text (or text with no file) — at least one
+  // of the two must be present.
+  if (!parsed.data.description && !hasFile) {
+    return { error: 'اكتب وصف النقطة أو ارفق ملفًا' };
+  }
+  if (hasFile && file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+    return { error: 'يجب رفع ملف بصيغة PDF' };
+  }
 
   const schedule = await prisma.supervisionSchedule.findUnique({
     where: { id: parsed.data.scheduleId },
@@ -101,9 +114,31 @@ export async function addPoint(_prev: ActionState, formData: FormData): Promise<
 
   if (!isManager && !isAssignedToday) return { error: 'لا يمكنك تسجيل نقاط — لست مشرفًا لهذا اليوم' };
 
+  let fileUrl: string | null = null;
+  if (hasFile) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    try {
+      const blob = await uploadPrivateFile(
+        `supervision/${parsed.data.scheduleId}-${Date.now()}-${safeName}`,
+        file,
+        { contentType: 'application/pdf' }
+      );
+      fileUrl = blob.url;
+    } catch (err) {
+      console.error('addPoint upload failed', err);
+      return {
+        error: `فشل رفع الملف: ${err instanceof Error ? err.message : 'خطأ غير معروف'}`
+      };
+    }
+  }
+
   try {
     await prisma.supervisionPoint.create({
-      data: { scheduleId: parsed.data.scheduleId, description: parsed.data.description }
+      data: {
+        scheduleId: parsed.data.scheduleId,
+        description: parsed.data.description ?? '',
+        fileUrl
+      }
     });
   } catch (err) {
     console.error('addPoint failed', err);

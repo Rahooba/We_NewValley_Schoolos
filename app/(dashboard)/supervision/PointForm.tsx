@@ -40,11 +40,16 @@ export function PointForm({
         </select>
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">وصف النقطة</label>
-        <input name="description" required className="input-field text-sm" />
+        <label className="block text-xs text-muted mb-1">وصف النقطة (اختياري)</label>
+        <input name="description" className="input-field text-sm" />
+      </div>
+      <div>
+        <label className="block text-xs text-muted mb-1">مرفق PDF (اختياري)</label>
+        <input type="file" name="file" accept=".pdf,application/pdf" className="input-field text-sm" />
       </div>
       <SubmitBtn />
       {state.error && <p className="text-xs text-red-600 col-span-full">{state.error}</p>}
+      {state.success && <p className="text-xs text-emerald-600 col-span-full">تم تسجيل النقطة</p>}
     </form>
   );
 }
