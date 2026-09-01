@@ -86,7 +86,7 @@ export default function LoginPage() {
         className="fixed bottom-3 right-3 z-50 h-10 w-10 rounded-xl object-cover shadow-[0_6px_18px_-6px_rgba(91,42,140,0.35)] ring-2 ring-white sm:bottom-4 sm:right-4 sm:h-12 sm:w-12"
       /> */}
       <img
-  src="/nass-logo.png"
+  src="/galaxy-logo.jpg"
   alt="NASS Academy"
   className="fixed bottom-3 right-3 z-50 h-20 w-20 rounded-xl object-cover shadow-[0_6px_18px_-6px_rgba(91,42,140,0.35)] ring-2 ring-white sm:bottom-4 sm:right-4 sm:h-14 sm:w-14"
 />
